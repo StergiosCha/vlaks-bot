@@ -19,13 +19,17 @@
   .demo p{font-family:var(--book);font-size:1.05rem;color:#cdc3b2;max-width:38rem}
   .demo .red{color:var(--kokkino)}
 
-  #vx-launcher{position:fixed;right:22px;bottom:22px;width:74px;height:74px;border-radius:50%;border:2px solid var(--xryso);cursor:pointer;
+  /* Το site έχει ήδη κάτω δεξιά τα «Αδερφές;» και τον σκρολτς μετρητή (z-index 60).
+     Ο ξεναγός στοιβάζεται από πάνω τους και κάθεται ψηλότερα, να μη σκεπάζει κανένα. */
+  #vx-launcher{position:fixed;right:22px;bottom:var(--vx-bottom,118px);width:74px;height:74px;border-radius:50%;
+    border:2px solid var(--xryso);cursor:pointer;z-index:2147483000;
     background:#1a1210 center/cover no-repeat;box-shadow:0 10px 30px rgba(0,0,0,.55);transition:transform .15s}
   #vx-launcher:hover{transform:scale(1.06);border-color:var(--xryso-glitter)}
   #vx-launcher .tag{position:absolute;left:50%;transform:translateX(-50%);bottom:-9px;background:var(--kokkino);color:#fff;
     font-size:10px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:2px;white-space:nowrap}
 
-  #vx{position:fixed;right:22px;bottom:110px;width:min(420px,calc(100vw - 28px));height:min(660px,calc(100vh - 140px));
+  #vx{position:fixed;right:22px;bottom:calc(var(--vx-bottom,118px) + 88px);z-index:2147483000;
+    width:min(420px,calc(100vw - 28px));height:min(640px,calc(100vh - var(--vx-bottom,118px) - 110px));
     background:#120c0a;border:1px solid #34281f;border-radius:4px;box-shadow:0 18px 50px rgba(0,0,0,.6);display:none;flex-direction:column;overflow:hidden}
   #vx.open{display:flex}
   .vx-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #34281f;background:linear-gradient(180deg,#1a1210,#120c0a)}
@@ -112,7 +116,10 @@
 
 <script>
 (function(){
-  const API=(window.VLAX_API||''), AV=(window.VLAX_AVATARS||'/avatar');
+  const API=(window.VLAX_API||'');
+  // Όταν το widget τρέχει μέσα στο site (άλλο origin), τα avatars ζουν στον bot server,
+  // όχι στο site. Χωρίς αυτό, το /avatar δείχνει στο GitHub Pages και βγάζει 404.
+  const AV=(window.VLAX_AVATARS||(API?API+'/avatar':'/avatar'));
   const $=s=>document.querySelector(s);
   const panel=$('#vx'), launcher=$('#vx-launcher'), body=$('#vx-body'), input=$('#vx-input'), send=$('#vx-send'), avEl=$('#vx-av');
   let lang=(navigator.language||'').startsWith('el')?'el':'en', personas=[], persona=localStorage.getItem('vlax_persona')||null, busy=false, opened=false, fnCount=0;
