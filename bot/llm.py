@@ -24,6 +24,14 @@ log = logging.getLogger("vlax.llm")
 Message = dict[str, str]  # {"role": "user"|"assistant", "content": str}
 
 
+class PromptBlocked(RuntimeError):
+    """Το Gemini απέρριψε το ίδιο το prompt (PROHIBITED_CONTENT).
+
+    Δεν είναι μεταβατικό σφάλμα και ΔΕΝ διορθώνεται αλλάζοντας μοντέλο ή κλειδί: το
+    φίλτρο δεν ρυθμίζεται από τα safety settings. Το μόνο που βοηθάει είναι να σταλεί
+    λιγότερο κείμενο — γι' αυτό το σηκώνουμε ξεχωριστά, να το πιάσει ο server."""
+
+
 # ---------- shared helpers ----------
 def _coerce(raw: str) -> dict:
     """Parse model JSON, tolerating code fences / leading prose."""
@@ -124,6 +132,9 @@ class GeminiProvider:
                 ],
             ),
         )
+        fb = getattr(resp, "prompt_feedback", None)
+        if fb is not None and getattr(fb, "block_reason", None):
+            raise PromptBlocked(str(fb.block_reason))
         text = getattr(resp, "text", None)
         if not text:
             raise ValueError("empty Gemini response")
@@ -140,6 +151,8 @@ class GeminiProvider:
             try:
                 log.info("Gemini attempt %d: model=%s key=%d", attempt + 1, m, k)
                 return _coerce(self._call(k, m, system_prompt(persona), prompt))
+            except PromptBlocked:
+                raise            # όλα τα μοντέλα θα το μπλοκάρουν· το χειρίζεται ο server
             except Exception as e:  # noqa: BLE001
                 last = e
                 self.failed[(k, m)] = time.time()

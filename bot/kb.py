@@ -136,18 +136,43 @@ def _clean(s: str) -> str:
     return re.sub(r"\s+", " ", s or "").strip()
 
 
-def _chunk(text: str, size: int = 1400) -> list[str]:
-    paras = [p.strip() for p in re.split(r"\n{2,}", text) if p.strip()]
-    out, cur = [], ""
-    for p in paras:
-        if len(cur) + len(p) + 2 > size and cur:
-            out.append(cur)
-            cur = p
-        else:
-            cur = f"{cur}\n\n{p}" if cur else p
-    if cur:
-        out.append(cur)
-    return out or [text[:size]]
+def _chunk(text: str, size: int = 1400, overlap_sentences: int = 1) -> list[str]:
+    """Κόβει κείμενο σε κομμάτια που χωράνε σε prompt.
+
+    Το κείμενο που βγάζουμε από το site ΔΕΝ έχει κενές γραμμές (το get_text ενώνει με
+    κενά), οπότε το σπάσιμο σε παραγράφους από μόνο του άφηνε μια σελίδα 33.000
+    χαρακτήρων να γίνεται ένα κομμάτι των 1.400 — δηλαδή πετούσε το 96% του διηγήματος.
+    Γι' αυτό: πρώτα παράγραφοι αν υπάρχουν, αλλιώς προτάσεις σε παράθυρα, με μία
+    πρόταση επικάλυψη ώστε να μην κόβεται νόημα στη μέση.
+    """
+    text = (text or "").strip()
+    if not text:
+        return []
+    blocks = [b.strip() for b in re.split(r"\n{2,}", text) if b.strip()] or [text]
+    out: list[str] = []
+    for block in blocks:
+        if len(block) <= size:
+            out.append(block)
+            continue
+        sentences = [x for x in re.split(r"(?<=[.;!·…])\s+", block) if x.strip()]
+        cur: list[str] = []
+        n = 0
+        for sent in sentences:
+            while len(sent) > size:                      # μονοκόμματη τερατώδης πρόταση
+                if cur:
+                    out.append(" ".join(cur))
+                    cur, n = [], 0
+                out.append(sent[:size])
+                sent = sent[size:]
+            if n + len(sent) + 1 > size and cur:
+                out.append(" ".join(cur))
+                cur = cur[-overlap_sentences:] if overlap_sentences else []
+                n = sum(len(x) + 1 for x in cur)
+            cur.append(sent)
+            n += len(sent) + 1
+        if cur:
+            out.append(" ".join(cur))
+    return out
 
 
 class KnowledgeBase:

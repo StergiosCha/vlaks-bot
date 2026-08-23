@@ -27,7 +27,7 @@ from pydantic import BaseModel, Field
 
 import config
 from kb import get_kb
-from llm import get_provider
+from llm import PromptBlocked, get_provider
 from personas import DEFAULT_PERSONA, PERSONAS, build_context, persona_list
 from ratelimit import Limiter, client_ip
 
@@ -133,8 +133,21 @@ def answer(session_id: str, message: str, persona: str) -> dict:
     t0 = time.time()
     chunks = kb.search(message, k=config.TOP_K_CHUNKS)
     events = kb.find_events(message, k=6)
-    context = build_context(kb, message, chunks, events)
-    result = provider.generate(context, history, message, persona)
+    # Το Gemini μπλοκάρει ολόκληρο το prompt (PROHIBITED_CONTENT) αν κάποιο απόσπασμα
+    # δεν του αρέσει — και το διήγημα έχει κόκα και μια κατηγορία για δηλητηρίαση.
+    # Είναι λογοτεχνία, αλλά το φίλτρο δεν ρυθμίζεται. Αντί να δει ο επισκέπτης σφάλμα,
+    # ξαναρωτάμε με λιγότερο κείμενο: τα μισά αποσπάσματα, μετά μόνο τα ευρετήρια.
+    ladder = [chunks, chunks[: max(1, len(chunks) // 2)], []]
+    result = None
+    for i, subset in enumerate(ladder):
+        context = build_context(kb, message, subset, events)
+        try:
+            result = provider.generate(context, history, message, persona)
+            break
+        except PromptBlocked as exc:
+            log.warning("μπλοκαρισμένο prompt (%s) με %d αποσπάσματα — υποχώρηση", exc, len(subset))
+            if i == len(ladder) - 1:
+                raise
 
     # Η γλώσσα βγαίνει από το ΚΕΙΜΕΝΟ που έγραψε, όχι από το πεδίο που δήλωσε.
     greek = sum(1 for ch in result["reply"] if "\u0370" <= ch <= "\u03ff" or "\u1f00" <= ch <= "\u1fff")
