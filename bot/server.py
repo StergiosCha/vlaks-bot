@@ -240,7 +240,10 @@ def personas_endpoint():
     return {"personas": persona_list(), "default": DEFAULT_PERSONA}
 
 
-@app.get("/health")
+# GET *και* HEAD: οι υπηρεσίες παρακολούθησης (UptimeRobot κ.λπ.) στέλνουν HEAD, και το
+# FastAPI — σε αντίθεση με το σκέτο Starlette — δεν το προσθέτει μόνο του στα GET routes.
+# Χωρίς αυτό ο monitor έπαιρνε 405 και σε ειδοποιούσε ότι έπεσε ενώ ήταν μια χαρά.
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     kb = get_kb()
     return {"ok": True, "provider": config.LLM_PROVIDER, "pages": len(kb.pages),
