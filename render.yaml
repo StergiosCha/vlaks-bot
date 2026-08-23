@@ -5,7 +5,7 @@
 # ίδιο το widget όταν ανοίγει ο επισκέπτης το παράθυρο (GET /health).
 services:
   - type: web
-    name: vlax-bot
+    name: vlaks-bot
     runtime: python
     plan: free
     region: frankfurt
