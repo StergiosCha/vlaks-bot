@@ -41,6 +41,43 @@ Tziros» των οδηγιών της βραδιάς («θα τον αναγνω
 6. Κρατήσεις / κενά / «είμαστε αδερφές» → `handoff` και παραπομπή στη σελίδα.
 7. Η υποσημείωση είναι τεκμηρίωση, όχι διακόσμηση — και ελέγχεται από τον server.
 
+## Deploy — Render, Web Service (free)
+
+**New +** → **Web Service** → repo `StergiosCha/vlaks-bot`:
+
+| πεδίο | τιμή |
+|---|---|
+| Language | Python 3 |
+| Region | Frankfurt |
+| Root Directory | `bot` |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn server:app --host 0.0.0.0 --port $PORT` |
+| Instance Type | Free |
+| Health Check Path | `/health` |
+
+Environment variables:
+
+```
+GEMINI_API_KEY      = <το κλειδί>
+PYTHON_VERSION      = 3.12
+CORS_ORIGINS        = https://stergioscha.github.io
+RL_PER_IP_MESSAGES  = 20
+RL_DAILY_CAP        = 600
+```
+
+Έλεγχος: `curl https://<service>.onrender.com/health` → `{"ok": true, ...}`.
+
+Μετά, το site με το URL:
+
+```bash
+cd ~/Dropbox/vlax-archive/site
+PUBLIC_VLAX_BOT_URL=https://<service>.onrender.com npm run deploy
+```
+
+Free tier: 750 ώρες/μήνα για όλο το workspace, ύπνος μετά από 15′ ησυχίας, ~1′ ξύπνημα.
+Το widget στέλνει `GET /health` μόλις ο επισκέπτης πλησιάσει το κουμπί, οπότε ξυπνάει
+όσο εκείνος διαβάζει. Το `/health` δεν καλεί μοντέλο.
+
 ## Τρέξιμο
 
 ```bash
