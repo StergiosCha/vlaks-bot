@@ -1,0 +1,5 @@
+-r requirements.txt
+# Μόνο για δουλειά στο μηχάνημά σου, όχι στο deploy:
+beautifulsoup4>=4.12    # διάβασμα του site/dist -> kb_cache.json
+pillow>=10.0            # κόψιμο των avatars (make_avatar.py)
+anthropic>=0.60         # εναλλακτικός provider (LLM_PROVIDER=claude)

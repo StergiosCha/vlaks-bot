@@ -18,7 +18,6 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from bs4 import BeautifulSoup
 from rank_bm25 import BM25Okapi
 
 from config import ARCHIVE_DIR, BOT_DIR, SITE_BASE_URL, SITE_DIR, TEXTS_DIR
@@ -174,6 +173,11 @@ class KnowledgeBase:
         self.source = "cache"
 
     def load(self) -> None:
+        # Το BeautifulSoup χρειάζεται ΜΟΝΟ για να διαβαστεί το χτισμένο site. Στο deploy
+        # τρέχουμε από το kb_cache.json, οπότε δεν είναι runtime εξάρτηση.
+        from bs4 import BeautifulSoup  # noqa: PLC0415
+
+        self._soup = BeautifulSoup
         dist = SITE_DIR / "dist"
         if not dist.exists():
             raise RuntimeError(
@@ -187,7 +191,7 @@ class KnowledgeBase:
             if any(p in ("_astro", "media", "video") for p in slug_parts):
                 continue
             slug = "/".join(slug_parts)
-            soup = BeautifulSoup(html_file.read_text(encoding="utf-8"), "html.parser")
+            soup = self._soup(html_file.read_text(encoding="utf-8"), "html.parser")
             # events first (and remove them from the page text so they aren't double-indexed)
             for art in soup.select("article.event"):
                 ev = self._parse_event(art, slug)
