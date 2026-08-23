@@ -1,0 +1,26 @@
+# Render Blueprint — ο ξεναγός του ΒΛΑΞ.
+# Free tier: 750 instance-hours/μήνα ΓΙΑ ΟΛΟ ΤΟ WORKSPACE, spin-down μετά από 15' χωρίς
+# κίνηση, ~1 λεπτό για να ξυπνήσει. Ένα service ζεστό 24/7 τρώει ~730h — δηλαδή σχεδόν
+# όλο το μηνιαίο απόθεμα. Γι' αυτό ΑΥΤΟ εδώ δεν το κρατάμε ζεστό με ping: το ξυπνάει το
+# ίδιο το widget όταν ανοίγει ο επισκέπτης το παράθυρο (GET /health).
+services:
+  - type: web
+    name: vlax-bot
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: bot
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false            # μπαίνει από το dashboard, ποτέ στο git
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: CORS_ORIGINS
+        value: https://stergioscha.github.io
+      - key: RL_PER_IP_MESSAGES
+        value: "20"
+      - key: RL_DAILY_CAP
+        value: "600"
