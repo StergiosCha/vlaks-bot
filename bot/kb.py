@@ -157,6 +157,8 @@ class KnowledgeBase:
         self.chunks: list[dict] = []
         self._bm25: BM25Okapi | None = None
         self.source = ""
+        self.timeline_rows: list[dict] = []
+        self.timeline_text = ""
         if use_cache and not (SITE_DIR / "dist").exists() and CACHE_PATH.exists():
             self.load_cache()
         else:
@@ -168,7 +170,6 @@ class KnowledgeBase:
         self.pages = {k: Page(**v) for k, v in data["pages"].items()}
         self.events = {k: Event(**v) for k, v in data["events"].items()}
         self.chunks = data["chunks"]
-        self._enrich_from_timeline()
         self._bm25 = BM25Okapi([tokenize(f"{c['title']} {c['text']}", expand=True) for c in self.chunks])
         self.source = "cache"
 
@@ -243,7 +244,9 @@ class KnowledgeBase:
         )
 
     def _enrich_from_timeline(self) -> None:
-        """Archive rows the site doesn't render as cards still hold facts worth retrieving."""
+        """Προαιρετικό, μόνο για δουλειά τοπικά: γραμμές του αρχείου που το site δεν
+        δείχνει ως κάρτες. Το deploy τρέχει από το cache και δεν χρειάζεται το CSV,
+        γι' αυτό όλα όσα θέλει ο server ζουν μέσα στο bot/."""
         p = ARCHIVE_DIR / "timeline.csv"
         if not p.exists():
             return
